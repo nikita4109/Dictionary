@@ -1,44 +1,75 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#include "mainwindow.h"
+#include "ui_mainwindow.h"
 
-#include <QMainWindow>
-#include "dictionary.h"
-#include <QtConcurrent/QtConcurrent>
-
-QT_BEGIN_NAMESPACE
-namespace Ui { class MainWindow; }
-QT_END_NAMESPACE
-
-class MainWindow : public QMainWindow
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
 {
-    Q_OBJECT
+    ui->setupUi(this);
 
-public:
-    MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
+    try
+    {
+        dictionary.SetPath(PATH);
+    }
+    catch (const QString &exception)
+    {
+        QMessageBox::information(0, "error", exception);
+        exit(0);
+    }
 
-public slots:
-    /// Добавление слов в textEdit.
-    void AddWord(const QString&);
+    connect(&dictionary, SIGNAL(Add(QString)), this, SLOT(AddWord(QString)));
 
-private slots:
+    this->setFixedSize(this->size());
+}
 
-    /// Обработка изменения текста в lineEdit.
-    void on_lineEdit_textChanged(const QString&);
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
 
-    /// Изменение типа поиска.
-    void on_checkBox_stateChanged(int);
+void MainWindow::on_lineEdit_textChanged(const QString &word)
+{
+    Search(word);
+}
 
-private:
-    const QString PATH = "dictionary.txt";
+void MainWindow::on_checkBox_stateChanged(int)
+{
+    if (ui->checkBox->isChecked())
+        dictionary.setType(SearchType::Subsequence);
+    else
+        dictionary.setType(SearchType::Substring);
 
-    Ui::MainWindow *ui;
+    Search(ui->lineEdit->text());
+}
 
-    /// Словарь.
-    Dictionary dictionary;
+void MainWindow::AddWord(const QString &word)
+{
+    ui->textEdit->insertPlainText(word);
+}
 
-    /// Поиск в словаре.
-    void Search(const QString&);
-};
+void MainWindow::Search(const QString &word)
+{
+    dictionary.setRunning(false);
+    future.waitForFinished();
+    ui->textEdit->clear();
 
-#endif // MAINWINDOW_H
+    if (word == "") return;
+
+    dictionary.setRunning(true);
+
+    try
+    {
+        future = QtConcurrent::run([this, word] { dictionary.Find(word.toLower()); });
+    }
+    catch (const QException &exception)
+    {
+        QMessageBox::information(0, "error", exception.what());
+    }
+}
+
+
+void MainWindow::closeEvent(QCloseEvent*)
+{
+    dictionary.setRunning(false);
+    future.waitForFinished();
+}
