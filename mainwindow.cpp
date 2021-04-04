@@ -44,13 +44,13 @@ void MainWindow::on_checkBox_stateChanged(int)
 
 void MainWindow::AddWord(const QString &word)
 {
-    ui->textEdit->appendPlainText(word);
+    ui->textEdit->insertPlainText(word);
 }
 
 void MainWindow::Search(const QString &word)
 {
     dictionary.setRunning(false);
-    QThread::currentThread()->msleep(5);
+    future.waitForFinished();
     ui->textEdit->clear();
 
     if (word == "") return;
@@ -59,10 +59,17 @@ void MainWindow::Search(const QString &word)
 
     try
     {
-        QtConcurrent::run([this, word] { dictionary.Find(word.toLower()); });
+        future = QtConcurrent::run([this, word] { dictionary.Find(word.toLower()); });
     }
     catch (const QException &exception)
     {
         QMessageBox::information(0, "error", exception.what());
     }
+}
+
+
+void MainWindow::closeEvent(QCloseEvent*)
+{
+    dictionary.setRunning(false);
+    future.waitForFinished();
 }
