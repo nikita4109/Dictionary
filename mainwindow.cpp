@@ -44,7 +44,7 @@ void MainWindow::on_checkBox_stateChanged(int)
 
 void MainWindow::AddWord(const QString &word)
 {
-    ui->textEdit->insertPlainText(word);
+    ui->textEdit->appendPlainText(word);
 }
 
 void MainWindow::Search(const QString &word)
