@@ -51,6 +51,7 @@ void MainWindow::Search(const QString &word)
 {
     dictionary.setRunning(false);
     future.waitForFinished();
+    QApplication::processEvents();
     ui->textEdit->clear();
 
     if (word == "") return;
