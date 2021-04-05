@@ -50,8 +50,8 @@ void MainWindow::AddWord(const QString &word)
 void MainWindow::Search(const QString &word)
 {
     dictionary.setRunning(false);
-    future.waitForFinished();
     QApplication::processEvents();
+    future.waitForFinished();
     ui->textEdit->clear();
 
     if (word == "") return;
